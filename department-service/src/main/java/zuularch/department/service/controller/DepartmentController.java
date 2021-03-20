@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.department.service.entity.Department;
 import zuularch.department.service.services.DepartmentService;
@@ -23,6 +23,8 @@ public class DepartmentController {
     @Autowired
     private DepartmentService departmentService;
 
+
+    @HystrixCommand
     @PostMapping("/persist")
     public ResponseEntity<ModelMap> persistDepartment(@RequestBody Department department) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
@@ -35,5 +37,4 @@ public class DepartmentController {
         return ResponseEntity.status(HttpStatus.OK).body(
             new ModelMap().addAttribute("dept", departmentService.retrieveDepartmentById(id)));
     }
-
 }

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -31,6 +32,7 @@ public class UserController {
     @Autowired
     private RestTemplate restTemplate;
 
+    @HystrixCommand
     @PostMapping("/persist")
     public ResponseEntity<?> persistUser(@RequestBody User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -44,16 +46,22 @@ public class UserController {
         User user = userService.retrieveUserById(id);
         modelMap.put("user", user);
         log.info(":::::User {}", user);
-        String url = "http://department-service/department/retrieve/" + user.getDepartmentId();
-        String finalData = restTemplate.getForObject(url, String.class);
-        JSONObject jsonObject = (JSONObject) new JSONParser().parse(finalData);
-        for (Object obj : jsonObject.keySet()) {
-            String param = (String) obj;
-            if (param.equalsIgnoreCase("dept")) {
-                modelMap.put("department", jsonObject.get(param));
-            }
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(modelMap);
+        String url = "http://DEPARTMENT-SERVICE/department/retrieve/" + user.getDepartmentId();
 
+        try {
+            String finalData = restTemplate.getForObject(url, String.class);
+            JSONObject jsonObject = (JSONObject) new JSONParser().parse(finalData);
+            for (Object obj : jsonObject.keySet()) {
+                String param = (String) obj;
+                if (param.equalsIgnoreCase("dept")) {
+                    modelMap.put("department", jsonObject.get(param));
+                }
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(modelMap);
+        } catch (final Exception e) {
+            log.info(":::::::::::Inside Exception");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ModelMap().addAttribute("error_msg", e.getMessage()));
+        }
     }
 }
