@@ -14,14 +14,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * created by gaian on 31/10/19
- **/
-
 @Slf4j
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class IamCorsFilter implements Filter {
+public class BaseFilter implements Filter {
 
 
     @Override
