@@ -6,6 +6,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ModelMap;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -30,15 +31,16 @@ public class UserController {
     private UserService userService;
 
     @Autowired
+    //@Qualifier("depRestTemplate")
     private RestTemplate restTemplate;
 
-    @HystrixCommand
     @PostMapping("/persist")
     public ResponseEntity<?> persistUser(@RequestBody User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ModelMap().addAttribute("user", userService.persistUser(user)));
     }
 
+    @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
         @PathVariable(value = "id", required = true) String id) throws IOException, ParseException {
@@ -48,20 +50,43 @@ public class UserController {
         log.info(":::::User {}", user);
         String url = "http://DEPARTMENT-SERVICE/department/retrieve/" + user.getDepartmentId();
 
-        try {
+//        try {
             String finalData = restTemplate.getForObject(url, String.class);
-            JSONObject jsonObject = (JSONObject) new JSONParser().parse(finalData);
-            for (Object obj : jsonObject.keySet()) {
-                String param = (String) obj;
-                if (param.equalsIgnoreCase("dept")) {
-                    modelMap.put("department", jsonObject.get(param));
-                }
+        JSONObject jsonObject = (JSONObject) new JSONParser().parse(finalData);
+        for (Object obj : jsonObject.keySet()) {
+            String param = (String) obj;
+            if (param.equalsIgnoreCase("dept")) {
+                modelMap.put("department", jsonObject.get(param));
             }
-            return ResponseEntity.status(HttpStatus.OK).body(modelMap);
-        } catch (final Exception e) {
-            log.info(":::::::::::Inside Exception");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ModelMap().addAttribute("error_msg", e.getMessage()));
         }
+        return ResponseEntity.status(HttpStatus.OK).body(modelMap);
+        // } catch (final Exception e) {
+        // log.info(":::::::::::Inside Exception");
+        // return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        // .body(new ModelMap().addAttribute("error_msg", e.getMessage()));
+        // }
     }
+
+    /**
+     * Note method name == fallbackMethod
+     * 
+     * Return Type and parameter must be same or else it will not work.
+     * 
+     * @param id
+     * @param t
+     * @return
+     */
+    public ResponseEntity<?> fallBackForRetrieveDepartment(String id, Throwable t) {//not necessary throwable it can be anything.
+        log.info("------Inside fall back method-----");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
+            "error_msg", "Department Service is down!!!!. Exception is " + t.toString()));
+
+    }
+
+
+    // public String fallBackForRetrieveDepartment(String id, Throwable t) {
+    // log.info("------Inside Error fall back method-----");
+    // return "I am error method";
+    //
+    // }
 }

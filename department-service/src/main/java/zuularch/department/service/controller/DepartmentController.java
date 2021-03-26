@@ -11,11 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import lombok.extern.slf4j.Slf4j;
 import zuularch.department.service.entity.Department;
 import zuularch.department.service.services.DepartmentService;
 
-@Slf4j
 @Controller
 @RequestMapping("department")
 public class DepartmentController {
