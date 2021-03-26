@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -31,7 +32,7 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    //@Qualifier("depRestTemplate")
+    // @Qualifier("depRestTemplate")
     private RestTemplate restTemplate;
 
     @PostMapping("/persist")
@@ -41,6 +42,7 @@ public class UserController {
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
+    @RateLimiter(name = "userService")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
         @PathVariable(value = "id", required = true) String id) throws IOException, ParseException {
@@ -50,8 +52,8 @@ public class UserController {
         log.info(":::::User {}", user);
         String url = "http://DEPARTMENT-SERVICE/department/retrieve/" + user.getDepartmentId();
 
-//        try {
-            String finalData = restTemplate.getForObject(url, String.class);
+        // try {
+        String finalData = restTemplate.getForObject(url, String.class);
         JSONObject jsonObject = (JSONObject) new JSONParser().parse(finalData);
         for (Object obj : jsonObject.keySet()) {
             String param = (String) obj;
@@ -76,7 +78,10 @@ public class UserController {
      * @param t
      * @return
      */
-    public ResponseEntity<?> fallBackForRetrieveDepartment(String id, Throwable t) {//not necessary throwable it can be anything.
+    public ResponseEntity<?> fallBackForRetrieveDepartment(String id, Throwable t) {// not necessary
+                                                                                    // throwable it
+                                                                                    // can be
+                                                                                    // anything.
         log.info("------Inside fall back method-----");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
             "error_msg", "Department Service is down!!!!. Exception is " + t.toString()));
