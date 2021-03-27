@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead.Type;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -41,7 +42,8 @@ public class UserController {
 
     // @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
     // @RateLimiter(name = "userService")
-    @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
+    // @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
+    @Bulkhead(name = "userService", fallbackMethod = "bulkHeadFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
         @PathVariable(value = "id", required = true) String id) throws IOException, ParseException {
@@ -103,6 +105,16 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(new ModelMap().addAttribute("error_msg",
                 "Retry kara tha but service he down hey....!!!!. Exception is " + t.toString()));
+
+    }
+
+    public ResponseEntity<?> bulkHeadFallBack(String id, Throwable t) {// not necessary
+        // throwable it
+        // can be
+        // anything.
+        log.info("-----Bulkhead may hu....-----");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
+            "error_msg", "Bulkhead ka return type....!!!!. Exception is " + t.toString()));
 
     }
 
