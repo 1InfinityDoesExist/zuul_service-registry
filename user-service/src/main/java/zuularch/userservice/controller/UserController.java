@@ -6,7 +6,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ModelMap;
@@ -17,8 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -41,8 +39,9 @@ public class UserController {
             .body(new ModelMap().addAttribute("user", userService.persistUser(user)));
     }
 
-    @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
-    @RateLimiter(name = "userService")
+    // @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
+    // @RateLimiter(name = "userService")
+    @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
         @PathVariable(value = "id", required = true) String id) throws IOException, ParseException {
@@ -94,4 +93,17 @@ public class UserController {
     // return "I am error method";
     //
     // }
+
+
+    public ResponseEntity<?> retryFallBack(String id, Throwable t) {// not necessary
+        // throwable it
+        // can be
+        // anything.
+        log.info("-----Retry ----Retry ----Retry -----");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ModelMap().addAttribute("error_msg",
+                "Retry kara tha but service he down hey....!!!!. Exception is " + t.toString()));
+
+    }
+
 }
