@@ -1,6 +1,7 @@
 package zuularch.department.service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.department.service.entity.Department;
 import zuularch.department.service.services.DepartmentService;
@@ -30,7 +32,9 @@ public class DepartmentController {
             new ModelMap().addAttribute("dept", departmentService.persistDepartment(department)));
     }
 
-    @RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
+    
+    @RateLimiter(name = "deptService", fallbackMethod = "rateLimiter")
+    @Retry(name = "retryDeptService", fallbackMethod = "retryFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<ModelMap> retrieveDepartmentById(
         @PathVariable(value = "id", required = true) String id) {
@@ -39,9 +43,16 @@ public class DepartmentController {
     }
 
     public ResponseEntity<?> rateLimiter(String id, Throwable t) {
-        log.info("------Inside fall back method of rateLimiter-----");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
-            "error_msg", "Inside Rate Limiter ....!!!!. Exception is " + t.toString()));
+        log.info("----In Department Controler Class--Inside fall back method of rateLimiter-----");
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.set("Try karo after some time ", "12s");
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).headers(responseHeaders)
+            .body(new ModelMap().addAttribute("msg", t.getMessage()));
+    }
 
+    public ResponseEntity<?> retryFallBack(String id, Throwable t) {
+        log.info("---Departement Service--Retry ----Retry ----Retry -----");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap()
+            .addAttribute("error_msg", " DS Retry Failed....!!!!. Exception is " + t.toString()));
     }
 }
