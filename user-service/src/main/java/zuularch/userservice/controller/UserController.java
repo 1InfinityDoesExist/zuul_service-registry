@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import io.github.resilience4j.bulkhead.annotation.Bulkhead;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
-import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -42,9 +39,9 @@ public class UserController {
             .body(new ModelMap().addAttribute("user", userService.persistUser(user)));
     }
 
-    @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
-    //@RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
     // @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
+    // @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
+    // @RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
     // @Bulkhead(name = "userService", fallbackMethod = "bulkHeadFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
@@ -54,6 +51,16 @@ public class UserController {
         modelMap.put("user", user);
         log.info(":::::User {}", user);
         String url = "http://DEPARTMENT-SERVICE/department/retrieve/" + user.getDepartmentId();
+
+        /**/
+        for (int iter = 0; iter < 100; iter++) {
+            System.out.println(":::::::::iter :::: " + iter);
+            String finalData = restTemplate.getForObject(url, String.class);
+        }
+
+
+        /**/
+
 
         // try {
         String finalData = restTemplate.getForObject(url, String.class);
@@ -81,8 +88,9 @@ public class UserController {
      * @param t
      * @return
      */
-    public ResponseEntity<?> fallBackForRetrieveDepartment(String id, Throwable t) {// param + 1 extra
-        log.info("------Inside fall back method-----");
+    public ResponseEntity<?> fallBackForRetrieveDepartment(String id, Throwable t) {// param + 1
+                                                                                    // extra
+        log.info("------Inside fall back method Circuit Breaker-----");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
             "error_msg", "Department Service is down!!!!. Exception is " + t.toString()));
 
@@ -92,7 +100,7 @@ public class UserController {
         // throwable it
         // can be
         // anything.
-        log.info("------Inside fall back method-----");
+        log.info("------Inside fall back method of rateLimiter-----");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
             "error_msg", "Inside Rate Limiter ....!!!!. Exception is " + t.toString()));
 
@@ -111,9 +119,8 @@ public class UserController {
         // can be
         // anything.
         log.info("-----Retry ----Retry ----Retry -----");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(new ModelMap().addAttribute("error_msg",
-                "Retry Failed....!!!!. Exception is " + t.toString()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap()
+            .addAttribute("error_msg", "Retry Failed....!!!!. Exception is " + t.toString()));
 
     }
 
