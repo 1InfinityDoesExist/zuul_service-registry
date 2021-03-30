@@ -33,11 +33,11 @@ public class BaseFilter implements Filter {
         String authorization = request.getHeader("Authorization");
         String tokenFromHeader = request.getHeader("token");
         String uri = request.getRequestURI();
-        log.info("::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-        log.info(authorization);
-        log.info(tokenFromHeader);
-        log.info(uri);
-        log.info("::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
+//        log.info("::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
+//        log.info(authorization);
+//        log.info(tokenFromHeader);
+//        log.info(uri);
+//        log.info("::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
         response.setHeader("Access-Control-Max-Age", "3600");

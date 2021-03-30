@@ -6,6 +6,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ModelMap;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import zuularch.userservice.entity.User;
 import zuularch.userservice.services.UserService;
@@ -39,9 +42,9 @@ public class UserController {
             .body(new ModelMap().addAttribute("user", userService.persistUser(user)));
     }
 
-    // @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
-    // @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
-    // @RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
+    @RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
+    @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
+    @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
     // @Bulkhead(name = "userService", fallbackMethod = "bulkHeadFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
@@ -52,17 +55,6 @@ public class UserController {
         log.info(":::::User {}", user);
         String url = "http://DEPARTMENT-SERVICE/department/retrieve/" + user.getDepartmentId();
 
-        /**/
-        for (int iter = 0; iter < 100; iter++) {
-            System.out.println(":::::::::iter :::: " + iter);
-            String finalData = restTemplate.getForObject(url, String.class);
-        }
-
-
-        /**/
-
-
-        // try {
         String finalData = restTemplate.getForObject(url, String.class);
         JSONObject jsonObject = (JSONObject) new JSONParser().parse(finalData);
         for (Object obj : jsonObject.keySet()) {
@@ -72,11 +64,6 @@ public class UserController {
             }
         }
         return ResponseEntity.status(HttpStatus.OK).body(modelMap);
-        // } catch (final Exception e) {
-        // log.info(":::::::::::Inside Exception");
-        // return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        // .body(new ModelMap().addAttribute("error_msg", e.getMessage()));
-        // }
     }
 
     /**
@@ -96,38 +83,21 @@ public class UserController {
 
     }
 
-    public ResponseEntity<?> rateLimiter(String id, Throwable t) {// not necessary
-        // throwable it
-        // can be
-        // anything.
+    public ResponseEntity<?> rateLimiter(String id, Throwable t) {
         log.info("------Inside fall back method of rateLimiter-----");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
-            "error_msg", "Inside Rate Limiter ....!!!!. Exception is " + t.toString()));
-
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.set("Try karo after some time ", "12s");
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).headers(responseHeaders)
+            .body(new ModelMap().addAttribute("msg", t.getMessage()));
     }
 
-
-    // public String fallBackForRetrieveDepartment(String id, Throwable t) {
-    // log.info("------Inside Error fall back method-----");
-    // return "I am error method";
-    //
-    // }
-
-
-    public ResponseEntity<?> retryFallBack(String id, Throwable t) {// not necessary
-        // throwable it
-        // can be
-        // anything.
+    public ResponseEntity<?> retryFallBack(String id, Throwable t) {
         log.info("-----Retry ----Retry ----Retry -----");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap()
             .addAttribute("error_msg", "Retry Failed....!!!!. Exception is " + t.toString()));
-
     }
 
-    public ResponseEntity<?> bulkHeadFallBack(String id, Throwable t) {// not necessary
-        // throwable it
-        // can be
-        // anything.
+    public ResponseEntity<?> bulkHeadFallBack(String id, Throwable t) {
         log.info("-----Inside bulkHeadFallBack method-----");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ModelMap().addAttribute(
             "error_msg", "Bulkhead ka return type....!!!!. Exception is " + t.toString()));
