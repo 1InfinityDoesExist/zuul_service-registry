@@ -42,9 +42,9 @@ public class UserController {
             .body(new ModelMap().addAttribute("user", userService.persistUser(user)));
     }
 
-    @RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
+    //@RateLimiter(name = "userService", fallbackMethod = "rateLimiter")
     @CircuitBreaker(name = "userService", fallbackMethod = "fallBackForRetrieveDepartment")
-    @Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
+    //@Retry(name = "retryUserService", fallbackMethod = "retryFallBack")
     // @Bulkhead(name = "userService", fallbackMethod = "bulkHeadFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<?> retrieveUserById(
