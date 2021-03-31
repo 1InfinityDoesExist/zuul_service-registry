@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
@@ -26,18 +27,32 @@ public class DepartmentController {
     private DepartmentService departmentService;
 
 
+    @GetMapping("/test")
+    public ResponseEntity<ModelMap> testing(
+        @RequestParam(value = "tenantId", required = true) String tenantId) {
+        log.info(":::::::::Just checking the param ratelimiter::::::");
+        return ResponseEntity.status(HttpStatus.OK).body(
+            new ModelMap().addAttribute("msg", "Rate Limiter ka Testing kar raha hu....!!!!"));
+    }
+
     @PostMapping("/persist")
     public ResponseEntity<ModelMap> persistDepartment(@RequestBody Department department) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
             new ModelMap().addAttribute("dept", departmentService.persistDepartment(department)));
     }
 
-    
+
     @RateLimiter(name = "deptService", fallbackMethod = "rateLimiter")
     @Retry(name = "retryDeptService", fallbackMethod = "retryFallBack")
     @GetMapping("/retrieve/{id}")
     public ResponseEntity<ModelMap> retrieveDepartmentById(
         @PathVariable(value = "id", required = true) String id) {
+        // try {
+        // Thread.sleep(2000);
+        // } catch (InterruptedException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
         return ResponseEntity.status(HttpStatus.OK).body(
             new ModelMap().addAttribute("dept", departmentService.retrieveDepartmentById(id)));
     }

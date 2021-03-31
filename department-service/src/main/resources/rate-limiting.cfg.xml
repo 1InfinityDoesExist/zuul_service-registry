@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rate-limiting
+	xmlns="http://docs.openrepose.org/repose/rate-limiting/v1.0">
+	<limit-group id="default" groups="default" default="true">
+		<limit id="department-service" uri="/department/test?"
+			uri-regex="/department/test?" http-methods="GET" unit="MINUTE"
+			value="4" query-param-names="tenantId" />
+	</limit-group>
+</rate-limiting>
