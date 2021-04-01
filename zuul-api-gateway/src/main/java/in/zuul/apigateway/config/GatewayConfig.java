@@ -10,6 +10,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import in.zuul.apigateway.TenantInfo;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -34,13 +35,14 @@ public class GatewayConfig {
      */
     @Bean
     public RouteLocator myRoute(RouteLocatorBuilder routeLocatorBuilder) {
+        log.info("-----------Route Locator Bean Creation Done------");
         return routeLocatorBuilder.routes()
-            .route(p -> p.path("/department/**")
-                .filters(f -> f
-                    .circuitBreaker(c -> c.setName("deptCircuitBreaker")
-                        .setFallbackUri("forward:/departmentServiceFallBack"))
-                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
-                .uri("lb://department-service"))
+            // .route(p -> p.path("/department/**")
+            // .filters(f -> f
+            // .circuitBreaker(c -> c.setName("deptCircuitBreaker")
+            // .setFallbackUri("forward:/departmentServiceFallBack"))
+            // .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
+            // .uri("lb://department-service"))
             .route(p -> p.path("/user/**")
                 .filters(f -> f
                     .circuitBreaker(c -> c.setName("userCircuitBreaker")
@@ -49,7 +51,8 @@ public class GatewayConfig {
                 .uri("lb://USER-SERVICE"))
             .route(r -> r.query("tenantId")
                 .filters(f -> f.circuitBreaker(
-                    c -> c.setName("tenantFallBack").setFallbackUri("forward:/deptCircuitBreaker")))
+                    c -> c.setName("tenantFallBack").setFallbackUri("forward:/deptCircuitBreaker"))
+                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
                 .uri("lb://department-service"))
             .build();
     }
@@ -57,9 +60,17 @@ public class GatewayConfig {
     /**
      * Mandatory
      * 
-     * 10 means in 1sec how many request must be executed without drop
+     * 1 means in 1sec how many request must be executed without drop
      * 
-     * 20 means in 1sec what is the max number of api call a user can request.
+     * 3 means in 1sec what is the max number of api call a user can request.
+     * 
+     * replenishRate is how many requests per second do you want a user to be allowed to do.
+     * 
+     * burstCapacity TODO: document burst capacity
+     * 
+     * keyResolver is a bean that implements the KeyResolver interface. In configuration, reference
+     * the bean by name using SpEL. #{@myKeyResolver} is a SpEL expression referencing a bean with
+     * the name myKeyResolver.
      * 
      * @return
      */
@@ -74,9 +85,15 @@ public class GatewayConfig {
      * 
      * @return
      */
+    // @Bean
+    // public KeyResolver keyResolver() {
+    // return exchange -> Mono.just(TenantInfo.getEcoSystemId());
+    // }
+
     @Bean
-    public KeyResolver keyResolver() {
-        return exchange -> Mono.just("1");
+    public KeyResolver userKeyResolver() {
+        log.info("-------User Key Resolver Key is TenantId ------");
+        return exchange -> Mono.just(exchange.getRequest().getQueryParams().getFirst("tenantId"));
     }
 
     /**
