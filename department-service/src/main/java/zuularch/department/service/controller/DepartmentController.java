@@ -32,6 +32,7 @@ public class DepartmentController {
     public ResponseEntity<ModelMap> testing(
         @RequestParam(value = "tenantId", required = true) String tenantId) {
         log.info(":::::::::Just checking the param ratelimiter::::::");
+        log.info(":::Thread {}", Thread.currentThread().getName());
         return ResponseEntity.status(HttpStatus.OK).body(
             new ModelMap().addAttribute("msg", "Rate Limiter ka Testing kar raha hu....!!!!"));
     }

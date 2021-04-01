@@ -37,17 +37,19 @@ public class GatewayConfig {
     public RouteLocator myRoute(RouteLocatorBuilder routeLocatorBuilder) {
         log.info("-----------Route Locator Bean Creation Done------");
         return routeLocatorBuilder.routes()
-            // .route(p -> p.path("/department/**")
-            // .filters(f -> f
-            // .circuitBreaker(c -> c.setName("deptCircuitBreaker")
-            // .setFallbackUri("forward:/departmentServiceFallBack"))
-            // .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
-            // .uri("lb://department-service"))
+//            .route(p -> p.path("/department/**")
+//                .filters(f -> f
+//                    .circuitBreaker(c -> c.setName("deptCircuitBreaker")
+//                        .setFallbackUri("forward:/departmentServiceFallBack"))
+////                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
+//                    )
+//                .uri("lb://department-service"))
             .route(p -> p.path("/user/**")
                 .filters(f -> f
                     .circuitBreaker(c -> c.setName("userCircuitBreaker")
                         .setFallbackUri("forward:/userServiceFallBack"))
-                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
+//                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
+                    )
                 .uri("lb://USER-SERVICE"))
             .route(r -> r.query("tenantId")
                 .filters(f -> f.circuitBreaker(
@@ -64,7 +66,7 @@ public class GatewayConfig {
      * 
      * 3 means in 1sec what is the max number of api call a user can request.
      * 
-     * replenishRate is how many requests per second do you want a user to be allowed to do.
+     * replenishRate is : how many requests per second do you want a user to be allowed to do.
      * 
      * burstCapacity TODO: document burst capacity
      * 
@@ -77,7 +79,7 @@ public class GatewayConfig {
     @Bean
     public RedisRateLimiter redisRateLimiter() {
         log.info(":::::Redis Rate Limiter:::::");
-        return new RedisRateLimiter(1, 3); // capacity
+        return new RedisRateLimiter(1, 3);
     }
 
     /**
@@ -85,16 +87,16 @@ public class GatewayConfig {
      * 
      * @return
      */
-    // @Bean
-    // public KeyResolver keyResolver() {
-    // return exchange -> Mono.just(TenantInfo.getEcoSystemId());
-    // }
+//    @Bean
+//    public KeyResolver keyResolver() {
+//        return exchange -> Mono.just("1");
+//    }
 
-    @Bean
-    public KeyResolver userKeyResolver() {
-        log.info("-------User Key Resolver Key is TenantId ------");
-        return exchange -> Mono.just(exchange.getRequest().getQueryParams().getFirst("tenantId"));
-    }
+     @Bean
+     public KeyResolver userKeyResolver() {
+     log.info("-------User Key Resolver Key is TenantId ------");
+     return exchange -> Mono.just(exchange.getRequest().getQueryParams().getFirst("tenantId"));
+     }
 
     /**
      * wait for 2 second , if not response redirect to fallback url.
