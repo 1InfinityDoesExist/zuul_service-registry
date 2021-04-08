@@ -9,7 +9,7 @@ class ApiGatewayApplicationTests {
 
 
     private RestTemplate restTemplate = new RestTemplate();
-    private final String url = "http://localhost:9191/department/test?tenantId=12345";
+    // private final String url = "http://localhost:9191/department/test?tenantId=12345";
 
     @Test
     void contextLoads() {
@@ -18,6 +18,7 @@ class ApiGatewayApplicationTests {
             @Override
             public void run() {
                 System.out.println("::::::Thread " + Thread.currentThread().getName());
+                String url = "http://localhost:9191/department/test?tenantId=12345";
                 String finalData = restTemplate.getForObject(url, String.class);
             }
         };
@@ -26,6 +27,7 @@ class ApiGatewayApplicationTests {
             @Override
             public void run() {
                 System.out.println("::::::Thread " + Thread.currentThread().getName());
+                String url = "http://localhost:9191/department/test?tenantId=12345";
                 String finalData = restTemplate.getForObject(url, String.class);
             }
         };
@@ -34,6 +36,7 @@ class ApiGatewayApplicationTests {
             @Override
             public void run() {
                 System.out.println("::::::Thread " + Thread.currentThread().getName());
+                String url = "http://localhost:9191/department/test?tenantId=12345";
                 String finalData = restTemplate.getForObject(url, String.class);
             }
         };
@@ -42,6 +45,7 @@ class ApiGatewayApplicationTests {
             @Override
             public void run() {
                 System.out.println("::::::Thread " + Thread.currentThread().getName());
+                String url = "http://localhost:9191/department/test?tenantId=1234";
                 String finalData = restTemplate.getForObject(url, String.class);
             }
         };
@@ -50,6 +54,7 @@ class ApiGatewayApplicationTests {
             @Override
             public void run() {
                 System.out.println("::::::Thread " + Thread.currentThread().getName());
+                String url = "http://localhost:9191/department/test?tenantId=1234";
                 String finalData = restTemplate.getForObject(url, String.class);
             }
         };
@@ -58,6 +63,7 @@ class ApiGatewayApplicationTests {
             @Override
             public void run() {
                 System.out.println("::::::Thread " + Thread.currentThread().getName());
+                String url = "http://localhost:9191/department/test?tenantId=1234";
                 String finalData = restTemplate.getForObject(url, String.class);
             }
         };

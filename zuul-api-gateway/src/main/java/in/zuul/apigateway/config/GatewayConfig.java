@@ -37,20 +37,17 @@ public class GatewayConfig {
     public RouteLocator myRoute(RouteLocatorBuilder routeLocatorBuilder) {
         log.info("-----------Route Locator Bean Creation Done------");
         return routeLocatorBuilder.routes()
-//            .route(p -> p.path("/department/**")
-//                .filters(f -> f
-//                    .circuitBreaker(c -> c.setName("deptCircuitBreaker")
-//                        .setFallbackUri("forward:/departmentServiceFallBack"))
-////                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
-//                    )
-//                .uri("lb://department-service"))
-            .route(p -> p.path("/user/**")
-                .filters(f -> f
-                    .circuitBreaker(c -> c.setName("userCircuitBreaker")
-                        .setFallbackUri("forward:/userServiceFallBack"))
-//                    .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
-                    )
-                .uri("lb://USER-SERVICE"))
+            // .route(p -> p.path("/department/retrieve/*") // in same controller so .* not used.
+            // .filters(f -> f
+            // .circuitBreaker(c -> c.setName("deptCircuitBreaker")
+            // .setFallbackUri("forward:/departmentServiceFallBack"))
+            //// .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
+            // )
+            // .uri("lb://department-service"))
+            .route(p -> p.path("/user/**").filters(f -> f.circuitBreaker(
+                c -> c.setName("userCircuitBreaker").setFallbackUri("forward:/userServiceFallBack"))
+            // .requestRateLimiter().configure(c -> c.setRateLimiter(redisRateLimiter())))
+            ).uri("lb://USER-SERVICE"))
             .route(r -> r.query("tenantId")
                 .filters(f -> f.circuitBreaker(
                     c -> c.setName("tenantFallBack").setFallbackUri("forward:/deptCircuitBreaker"))
@@ -74,6 +71,14 @@ public class GatewayConfig {
      * the bean by name using SpEL. #{@myKeyResolver} is a SpEL expression referencing a bean with
      * the name myKeyResolver.
      * 
+     * The redis-rate-limiter.replenishRate is how many requests per second do you want a user to be
+     * allowed to do, without any dropped requests. This is the rate that the token bucket is
+     * filled.
+     * 
+     * The redis-rate-limiter.burstCapacity is the maximum number of requests a user is allowed to
+     * do in a single second. This is the number of tokens the token bucket can hold. Setting this
+     * value to zero will block all requests.
+     * 
      * @return
      */
     @Bean
@@ -87,16 +92,16 @@ public class GatewayConfig {
      * 
      * @return
      */
-//    @Bean
-//    public KeyResolver keyResolver() {
-//        return exchange -> Mono.just("1");
-//    }
+    // @Bean
+    // public KeyResolver keyResolver() {
+    // return exchange -> Mono.just("1");
+    // }
 
-     @Bean
-     public KeyResolver userKeyResolver() {
-     log.info("-------User Key Resolver Key is TenantId ------");
-     return exchange -> Mono.just(exchange.getRequest().getQueryParams().getFirst("tenantId"));
-     }
+    @Bean
+    public KeyResolver userKeyResolver() {
+        log.info("-------User Key Resolver Key is TenantId ------");
+        return exchange -> Mono.just(exchange.getRequest().getQueryParams().getFirst("tenantId"));
+    }
 
     /**
      * wait for 2 second , if not response redirect to fallback url.
